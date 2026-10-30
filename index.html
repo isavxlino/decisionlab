@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="DecisionLab: simulador interativo de aprendizagem corporativa. Decisões que desenvolvem competências.">
+<title>DecisionLab | Decisões que desenvolvem competências</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2315253E'/%3E%3Ccircle cx='9' cy='16' r='3' fill='%231B9AAA'/%3E%3Ccircle cx='23' cy='9' r='3' fill='%23fff'/%3E%3Ccircle cx='23' cy='23' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+/* =====================================================================
+   1. DESIGN TOKENS
+   ===================================================================== */
+:root{
+  --bg:#F5F7FB; --card:#FFFFFF; --navy:#15253E; --petrol:#176B83; --teal:#1B9AAA;
+  --green:#15966A; --amber:#E4A64B; --red:#D96767;
+  --green-d:#0E6F4D; --amber-d:#7A4F05; --red-d:#9C3030;
+  --green-t:#E5F5EE; --amber-t:#FDF3E1; --red-t:#FBEAEA; --teal-t:#E6F4F6;
+  --text:#15253E; --muted:#4F5E75; --line:#DFE5EE; --line-strong:#C5CFDD;
+  --r-s:12px; --r-m:16px; --r-l:18px;
+  --shadow:0 1px 2px rgba(21,37,62,.05),0 4px 14px rgba(21,37,62,.05);
+  --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 var(--font)}
+h1,h2,h3,h4{margin:0;line-height:1.2;letter-spacing:-.015em;font-weight:650}
+h1{font-size:clamp(1.65rem,1.2rem + 1.8vw,2.3rem)}
+h2{font-size:1.2rem} h3{font-size:1.02rem} p{margin:0}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px;border-radius:6px}
+[tabindex="-1"]:focus{outline:none}
+[hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0}
+.skip{position:absolute;left:12px;top:-60px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;z-index:100}
+.skip:focus{top:12px}
+.icon{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.muted{color:var(--muted)}
+
+/* =====================================================================
+   2. LAYOUT
+   ===================================================================== */
+.app{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
+.sidebar{background:var(--navy);color:#fff;padding:26px 18px;display:flex;flex-direction:column;gap:28px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:12px;padding:0 8px}
+.brand-mark{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.1);display:grid;place-items:center;color:#8FDDE6}
+.brand b{display:block;font-size:1.12rem;letter-spacing:-.02em}
+.brand small{display:block;color:#B8C5D9;font-size:.76rem;line-height:1.25}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:0;color:#D6DEEA;padding:11px 12px;border-radius:12px;cursor:pointer;transition:background .15s,color .15s}
+.nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav button[aria-current="page"]{background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+.side-note{margin-top:auto;font-size:.8rem;color:#B8C5D9;padding:0 8px}
+main{padding:34px clamp(18px,3.4vw,44px) 60px;max-width:1240px;width:100%}
+.screen{animation:enter .28s ease both}
+@keyframes enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page-head{margin-bottom:26px;display:grid;gap:8px;max-width:70ch}
+.page-head p{color:var(--muted);font-size:1.04rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-m);box-shadow:var(--shadow);padding:24px}
+.grid-2{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:22px;align-items:start}
+.stack{display:grid;gap:22px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+
+/* =====================================================================
+   3. COMPONENTES
+   ===================================================================== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:46px;padding:11px 20px;border-radius:var(--r-s);border:1px solid var(--line-strong);background:#fff;color:var(--navy);font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,transform .1s}
+.btn:hover:not(:disabled){background:#F0F4FA;border-color:#A9B7CB}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn.primary{background:var(--petrol);border-color:var(--petrol);color:#fff}
+.btn.primary:hover:not(:disabled){background:var(--navy);border-color:var(--navy)}
+.btn.danger{color:var(--red-d);border-color:#E7B4B4}
+.btn.danger:hover:not(:disabled){background:var(--red-t)}
+.btn.danger.solid{background:#B94545;border-color:#B94545;color:#fff}
+.btn.danger.solid:hover:not(:disabled){background:#9C3030}
+.btn.small{min-height:38px;padding:7px 14px;font-size:.92rem}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;font-size:.86rem;font-weight:600;background:var(--teal-t);color:var(--petrol);border:1px solid #BFE3E8}
+.chip.ok{background:var(--green-t);color:var(--green-d);border-color:#B7E2D0}
+.chip.warn{background:var(--amber-t);color:var(--amber-d);border-color:#F0D7A5}
+.chip.risk{background:var(--red-t);color:var(--red-d);border-color:#EBC0C0}
+.chip.plain{background:#EEF2F8;color:var(--muted);border-color:var(--line)}
+.chip .icon{width:15px;height:15px}
+.avatar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#E3EAF4,#CFDBEA);color:var(--navy);font-weight:700;letter-spacing:.02em;flex:none;position:relative;overflow:hidden}
+.avatar::after{content:"";position:absolute;inset:auto -6px -14px -6px;height:22px;background:rgba(21,37,62,.08);border-radius:50% 50% 0 0}
+.avatar.sm{width:34px;height:34px;font-size:.78rem}
+.avatar.me{background:linear-gradient(180deg,#CDE9ED,#A6D6DD);color:#0F4F61}
+.meter{display:flex;gap:4px;align-items:center}
+.meter i{display:block;width:22px;height:7px;border-radius:4px;background:#E1E7F0}
+.meter i.on{background:var(--petrol)}
+.progress{height:8px;border-radius:99px;background:#E4EAF3;overflow:hidden}
+.progress>span{display:block;height:100%;background:var(--petrol);border-radius:99px;transition:width .4s ease}
+.bar{height:12px;border-radius:99px;background:#E4EAF3;overflow:hidden}
+.bar>span{display:block;height:100%;border-radius:99px;background:var(--petrol)}
+.bar.ok>span{background:var(--green)} .bar.warn>span{background:var(--amber)} .bar.risk>span{background:var(--red)}
+.facts{display:flex;flex-wrap:wrap;gap:10px 22px;margin:14px 0 0;padding:0;list-style:none;color:var(--muted);font-size:.95rem}
+.facts li{display:flex;align-items:center;gap:8px}
+.comp-list{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.comp-list li{display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:start}
+.comp-ic{width:38px;height:38px;border-radius:11px;background:var(--teal-t);color:var(--petrol);display:grid;place-items:center}
+.comp-list b{display:block;font-size:.98rem}
+.comp-list span.d{color:var(--muted);font-size:.9rem;display:block}
+.steps-how{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:14px}
+.steps-how li{display:grid;grid-template-columns:30px 1fr;gap:12px;align-items:start}
+.steps-how .n{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:700;font-size:.88rem}
+.empty{border:1.5px dashed var(--line-strong);border-radius:var(--r-m);padding:26px;text-align:center;color:var(--muted);display:grid;gap:12px;justify-items:center}
+.attempt{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:18px 0;border-top:1px solid var(--line)}
+.attempt:first-child{border-top:0}
+.score-badge{width:62px;height:62px;border-radius:16px;display:grid;place-items:center;background:var(--teal-t);color:var(--petrol);font-size:1.45rem;font-weight:700}
+.mini-bars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:10px}
+.mini-bars small{display:flex;justify-content:space-between;color:var(--muted);font-size:.8rem;margin-bottom:4px}
+.notice{border-radius:var(--r-s);padding:13px 16px;background:var(--amber-t);border:1px solid #F0D7A5;color:#5E3E04;display:flex;gap:10px;align-items:flex-start;font-size:.95rem}
+.notice.info{background:var(--teal-t);border-color:#BFE3E8;color:#0F4F61}
+details.acc{border:1px solid var(--line);border-radius:var(--r-s);padding:0 16px;background:#FBFCFE}
+details.acc summary{cursor:pointer;padding:13px 0;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:12px;align-items:center}
+details.acc summary::-webkit-details-marker{display:none}
+details.acc summary::after{content:"+";font-size:1.3rem;color:var(--petrol)}
+details.acc[open] summary::after{content:"−"}
+details.acc .acc-body{padding:0 0 16px;color:var(--muted);display:grid;gap:10px;font-size:.95rem}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 18px;border-radius:12px;box-shadow:0 8px 28px rgba(21,37,62,.3);z-index:60;max-width:min(92vw,520px)}
+dialog{border:0;border-radius:var(--r-l);padding:26px;max-width:min(92vw,440px);box-shadow:0 20px 60px rgba(21,37,62,.35);color:var(--text)}
+dialog::backdrop{background:rgba(21,37,62,.5)}
+dialog h2{margin-bottom:8px} dialog p{color:var(--muted);margin-bottom:22px}
+dialog .row{justify-content:flex-end}
+
+/* =====================================================================
+   4. BRIEFING
+   ===================================================================== */
+.client-card{display:flex;gap:16px;align-items:center}
+.client-card .avatar{width:64px;height:64px;font-size:1.25rem}
+.briefing-list{margin:10px 0 0;padding-left:1.2em;display:grid;gap:8px}
+.callout{border-left:4px solid var(--amber);background:var(--amber-t);padding:14px 18px;border-radius:0 var(--r-s) var(--r-s) 0;color:#5E3E04}
+
+/* =====================================================================
+   5. SIMULADOR
+   ===================================================================== */
+.sim{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+.sim-side{position:sticky;top:24px;display:grid;gap:18px}
+.sim-side .card-inner{display:grid;gap:10px}
+.sim-main{display:grid;gap:18px;min-width:0}
+.chat-head{display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.chat-head .who{display:flex;gap:12px;align-items:center}
+.mood{display:grid;gap:4px;justify-items:end;font-size:.88rem;color:var(--muted)}
+.mood b{color:var(--navy)}
+.chat-log{height:clamp(250px,40vh,430px);overflow-y:auto;padding:18px 4px 4px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
+.msg{display:flex;gap:10px;align-items:flex-end;max-width:88%}
+.msg.me{align-self:flex-end;flex-direction:row-reverse}
+.bubble{padding:12px 16px;border-radius:16px;border:1px solid var(--line);background:#F7F9FC}
+.msg.client .bubble{border-bottom-left-radius:5px}
+.msg.me .bubble{background:var(--navy);border-color:var(--navy);color:#fff;border-bottom-right-radius:5px}
+.bubble .who{font-size:.78rem;font-weight:650;margin-bottom:3px;color:var(--petrol)}
+.msg.me .bubble .who{color:#9FDDE5}
+.msg.new{animation:enter .3s ease both}
+.typing{display:inline-flex;gap:5px;padding:4px 0}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:blink 1.1s infinite}
+.typing i:nth-child(2){animation-delay:.18s}.typing i:nth-child(3){animation-delay:.36s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.decision legend{padding:0;font-size:1.08rem;font-weight:650;margin-bottom:6px;display:block}
+.decision legend small{display:block;color:var(--petrol);font-weight:600;font-size:.88rem;margin-bottom:2px}
+.decision fieldset{border:0;padding:0;margin:0;min-width:0}
+.prompt{color:var(--muted);margin-bottom:16px;max-width:75ch}
+.options{display:grid;gap:12px}
+.option{position:relative;display:block;cursor:pointer}
+.option input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.option-body{display:grid;grid-template-columns:26px 1fr;gap:14px;padding:16px 18px;border:1.5px solid var(--line);border-radius:var(--r-m);background:#fff;transition:border-color .15s,background .15s,box-shadow .15s}
+.option:hover .option-body{border-color:#9FB4C9;background:#FAFCFE}
+.option input:focus-visible + .option-body{outline:3px solid var(--teal);outline-offset:2px}
+.option input:checked + .option-body{border-color:var(--petrol);background:var(--teal-t);box-shadow:0 0 0 1px var(--petrol)}
+.radio-dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--line-strong);display:grid;place-items:center;margin-top:2px;color:#fff}
+.radio-dot svg{width:13px;height:13px;stroke:#fff;stroke-width:3;fill:none;opacity:0}
+.option input:checked + .option-body .radio-dot{background:var(--petrol);border-color:var(--petrol)}
+.option input:checked + .option-body .radio-dot svg{opacity:1}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px;justify-content:space-between;align-items:center}
+.fb{display:grid;gap:16px}
+.fb-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.fb-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fb-block{border:1px solid var(--line);border-radius:var(--r-s);padding:14px 16px;background:#FBFCFE}
+.fb-block h4{font-size:.9rem;color:var(--petrol);margin-bottom:5px}
+.fb-block.wide{grid-column:1/-1;background:var(--teal-t);border-color:#BFE3E8}
+.mood-shift{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.95rem}
+
+/* =====================================================================
+   6. RELATÓRIO
+   ===================================================================== */
+.report-hero{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center}
+.score-ring{--p:0;width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--ring,var(--petrol)) calc(var(--p)*1%),#E4EAF3 0);display:grid;place-items:center}
+.score-ring div{width:118px;height:118px;background:#fff;border-radius:50%;display:grid;place-items:center;text-align:center}
+.score-ring b{font-size:2.3rem;line-height:1;letter-spacing:-.03em}
+.score-ring small{display:block;color:var(--muted);font-size:.78rem}
+.quote{border-left:4px solid var(--line-strong);padding:4px 0 4px 16px;color:var(--muted);font-style:italic;margin-top:12px}
+.comp-report{display:grid;gap:18px}
+.comp-row{display:grid;gap:8px}
+.comp-row .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.cols-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.list{margin:10px 0 0;padding-left:1.15em;display:grid;gap:8px}
+.step{display:grid;gap:10px;padding:18px 0;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0}
+.step-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
+.step .said{background:#F4F7FB;border-radius:var(--r-s);padding:12px 14px;font-size:.96rem}
+.step .effects{display:flex;flex-wrap:wrap;gap:8px}
+.pathmap{width:100%;height:auto;max-width:640px;display:block}
+.report-actions{display:flex;flex-wrap:wrap;gap:12px}
+
+/* =====================================================================
+   7. RESPONSIVO
+   ===================================================================== */
+@media (max-width:1000px){
+  .app{grid-template-columns:1fr}
+  .sidebar{position:static;height:auto;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;gap:12px;flex-wrap:wrap}
+  .brand small,.side-note{display:none}
+  .nav{flex-direction:row}
+  .nav button{padding:9px 12px}
+  .grid-2,.sim,.cols-2{grid-template-columns:1fr}
+  .sim-side{position:static}
+  main{padding-top:24px}
+}
+@media (max-width:620px){
+  .fb-grid,.mini-bars{grid-template-columns:1fr}
+  .report-hero{grid-template-columns:1fr;justify-items:start}
+  .attempt{grid-template-columns:auto 1fr}
+  .attempt .row{grid-column:1/-1}
+  .msg{max-width:96%}
+  .card{padding:18px}
+  .mood{justify-items:start}
+  .nav button span{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
+/* =====================================================================
+   8. IMPRESSÃO
+   ===================================================================== */
+@media print{
+  body{background:#fff;font-size:11pt}
+  .sidebar,.skip,.report-actions,.toast,#announcer,.no-print{display:none!important}
+  .app{display:block}
+  main{padding:0;max-width:none}
+  .card{box-shadow:none;break-inside:avoid;border-color:#bbb}
+  .step,.comp-row{break-inside:avoid}
+  details.acc{display:block}
+  details.acc>*{display:block!important}
+  .screen{animation:none}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Ir para o conteúdo principal</a>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 11.2C13 11 13 6 15 6M9 12.8C13 13 13 18 15 18"/></svg></span>
+      <span><b>DecisionLab</b><small>Decisões que desenvolvem competências.</small></span>
+    </div>
+    <nav class="nav" aria-label="Navegação principal">
+      <button type="button" data-action="go-dashboard" id="nav-dashboard"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Início</span></button>
+      <button type="button" data-action="go-history" id="nav-history"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/></svg><span>Histórico</span></button>
+    </nav>
+    <p class="side-note">Seus dados ficam salvos apenas neste navegador.</p>
+  </aside>
+  <main id="main">
+    <noscript><div class="notice">O DecisionLab precisa de JavaScript para funcionar. Ative o JavaScript no navegador e recarregue a página.</div></noscript>
+    <section class="screen" id="screen-dashboard" hidden></section>
+    <section class="screen" id="screen-briefing" hidden></section>
+    <section class="screen" id="screen-sim" hidden></section>
+    <section class="screen" id="screen-report" hidden></section>
+    <section class="screen" id="screen-history" hidden></section>
+  </main>
+</div>
+<div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<dialog id="dlg" aria-labelledby="dlg-title" aria-describedby="dlg-text">
+  <form method="dialog">
+    <h2 id="dlg-title"></h2><p id="dlg-text"></p>
+    <div class="row">
+      <button class="btn" value="cancel" id="dlg-cancel">Cancelar</button>
+      <button class="btn primary" value="ok" id="dlg-ok">Confirmar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+/* =====================================================================
+   A. DADOS DO CENÁRIO
+   Estrutura declarativa (sem funções), pronta para migrar para JSON.
+   Condições (when): { flag, notFlag, flagAny[], trustMin, trustMax, chose, choseAny[] }
+   Rubrica por alternativa: scores 0 a 3 por competência; trust de -2 a +2.
+   ===================================================================== */
+const COMPETENCIES = {
+  emp:{name:"Empatia",icon:"heart",desc:"Reconhecer a perspectiva e as emoções do cliente.",
+    recs:{
+      low:"Pratique nomear a emoção do cliente antes de agir e perguntar sobre o impacto que a situação causa. Uma sequência simples ajuda: reconhecer, validar e perguntar.",
+      mid:"Você acolheu o cliente em alguns momentos. Procure manter o acolhimento ao longo de toda a conversa, sobretudo ao comunicar atrasos e limites.",
+      high:"Mantenha a empatia associada a ações concretas e cuide para que o acolhimento não substitua a informação objetiva."}},
+  com:{name:"Comunicação",icon:"chat",desc:"Explicar informações com clareza, transparência e respeito.",
+    recs:{
+      low:"Estruture notícias difíceis em três partes: o que aconteceu, o que isso significa para o cliente e o que será feito. Evite termos internos como fila e SLA.",
+      mid:"Suas respostas oscilaram entre clareza e suavização. Revise-as buscando precisão em datas, responsabilidades e limites.",
+      high:"Sua comunicação foi transparente. Experimente acrescentar uma pausa para o cliente reagir antes de avançar para a solução."}},
+  res:{name:"Resolução de problemas",icon:"route",desc:"Investigar, propor alternativas viáveis e definir encaminhamentos.",
+    recs:{
+      low:"Antes de responder, organize: qual é o problema, qual alternativa é possível e quem faz o quê até quando. Registre os combinados no chamado.",
+      mid:"Você propôs encaminhamentos, mas nem sempre com prazos, responsáveis e registro. Pratique a matriz: o quê, quem, quando.",
+      high:"Você conduziu bem as alternativas. Avalie o risco de cada promessa e confirme que o cliente aceita a solução."}}
+};
+const COMP_KEYS = ["emp","com","res"];
+
+const EMOTIONS = {
+  irritado:{level:1,label:"Irritado"}, defensivo:{level:1,label:"Defensivo"},
+  impaciente:{level:2,label:"Impaciente"}, cetico:{level:2,label:"Cético"},
+  reservado:{level:3,label:"Reservado"}, receptivo:{level:4,label:"Receptivo"}, aliviado:{level:5,label:"Aliviado"}
+};
+
+const MOMENTS = {
+  1:"Abordagem inicial diante da reclamação",
+  2:"Escuta ativa e identificação do problema",
+  3:"Comunicação de informações difíceis",
+  4:"Apresentação de alternativas de solução",
+  5:"Gestão da resistência e negociação",
+  6:"Encerramento e próximos passos"
+};
+
+/* Alternativas do momento 2 são as mesmas nas três variações da cena. */
+const S2_OPTIONS = [
+  {id:"s2-a",label:"Aprofundar o impacto para o cliente",
+   text:"Sinto muito por você ter pago duas vezes e ficado sem retorno. Isso é sério. Antes de falarmos de prazos, me conta: como isso tem afetado você ou o seu negócio?",
+   scores:{emp:3,com:2,res:0},trust:1,flags:["vented"],next:"s3",
+   shows:"Interesse genuíno pelo impacto da situação sobre o cliente",
+   risk:"Adiar a investigação técnica pode alongar a espera de quem já está impaciente",
+   fb:{comunica:"Que você se importa com a situação dele além do número do chamado.",
+     comportamento:"Empatia ativa e perguntas abertas. A investigação técnica fica para depois.",
+     consequencia:{
+       s2a:"Rafael, que estava impaciente, estranha o desvio. Ele reconhece a atenção e menciona o fechamento de caixa, mas ainda cobra um fato concreto.",
+       s2b:"Rafael abre o contexto: o valor duplicado compromete o caixa do mês. A confiança sobe, mas ele ainda não recebeu nenhuma informação nova.",
+       s2c:"A pergunta desarma parte da defensiva. Rafael admite que o valor duplicado compromete o caixa e baixa o tom."},
+     recomendacao:"Depois de ouvir o impacto, resuma o que entendeu e anuncie o próximo passo para não prolongar a espera dele."}},
+  {id:"s2-b",label:"Resumir e confirmar o problema",
+   text:"Deixa eu confirmar se entendi: houve cobrança duplicada no plano Business no dia 14, o prazo mudou de dois para cinco dias e ontem o chamado foi reencaminhado sem retorno. Falta alguma coisa?",
+   scores:{emp:2,com:3,res:1},trust:1,flags:["facts","confirmed"],next:"s3",
+   shows:"Paráfrase e checagem de entendimento, que poupam o cliente de repetir a história",
+   risk:"Um resumo apenas factual deixa de fora a dimensão emocional do cliente",
+   fb:{comunica:"Que você ouviu com atenção e que ele não precisará repetir a história.",
+     comportamento:"Paráfrase e checagem de entendimento, base da escuta ativa.",
+     consequencia:{
+       s2a:"Rafael confirma e acrescenta que o reencaminhamento foi o que mais o irritou. A conversa finalmente parte de um ponto comum.",
+       s2b:"Rafael confirma sem precisar repetir nada e demonstra alívio por ser compreendido. Passa a esperar informação concreta.",
+       s2c:"O resumo derruba parte da resistência: Rafael percebe que a empresa reconhece o que ocorreu e pergunta o que o sistema mostra."},
+     recomendacao:"Complemente o resumo com uma pergunta sobre o impacto. Isso traz a dimensão emocional que a paráfrase factual não captura."}},
+  {id:"s2-c",label:"Consultar o sistema",
+   text:"Vou verificar agora o status da cobrança e do reencaminhamento no sistema. Preciso de uns dois minutos e já te digo o que encontrar.",
+   scores:{emp:0,com:2,res:3},trust:0,flags:["facts"],next:"s3",
+   shows:"Investigação objetiva com base em dados do sistema",
+   risk:"Pouca escuta: o cliente só ouve que deve esperar",
+   fb:{comunica:"Compromisso com os fatos, mas pouca escuta. Rafael só ouve a palavra aguarde.",
+     comportamento:"Investigação objetiva e uso de dados, sem verificar o que o cliente viveu.",
+     consequencia:{
+       s2a:"Como ele já pedia agilidade, a consulta é recebida como esperado. Ninguém perguntou, porém, como o problema o afeta.",
+       s2b:"Depois de se abrir ao acolhimento, Rafael estranha a mudança brusca para aguarde e volta a cobrar.",
+       s2c:"Rafael tolera a espera, mas segue sem sentir que foi ouvido."},
+     recomendacao:"Narre o que faz e mantenha o contato enquanto consulta: pergunte, por exemplo, se o valor duplicado foi no cartão ou no boleto."}}
+];
+
+const SCENES = {
+  s1:{id:"s1",moment:1,
+    prompt:"Rafael acabou de relatar o problema em tom irritado. Como você abre o atendimento?",
+    client:[{emotion:"irritado",text:"Boa tarde. Esta já é a terceira vez que entro em contato sobre o chamado 48213. Abri há nove dias, me disseram que seriam dois dias úteis, depois falaram em cinco, e agora ninguém sabe me dizer nada. Se isso não for resolvido hoje, vou cancelar meu contrato."}],
+    options:[
+      {id:"s1-a",label:"Ir direto à consulta do chamado",
+       text:"Rafael, já localizei o chamado 48213. Vou abrir o histórico completo agora, assim você não precisa repetir tudo. Me dê um minuto.",
+       scores:{emp:1,com:2,res:3},trust:1,flags:[],next:"s2a",
+       shows:"Foco em agilizar e poupar o cliente de repetir informações",
+       risk:"Ação sem reconhecimento da frustração pode soar mecânica",
+       fb:{comunica:"Que você quer resolver, não conversar. Sinaliza agilidade e respeito ao tempo dele, mas não reconhece o desgaste de ter contatado a empresa três vezes.",
+         comportamento:"Orientação para a solução e economia de esforço do cliente.",
+         consequencia:"Rafael aceita a consulta, mas segue impaciente. Ele sente que o problema é tratado como tarefa, não como uma experiência dele.",
+         recomendacao:"Una a ação a uma frase de reconhecimento: nomeie o desgaste de ter contatado três vezes antes de pedir o tempo da consulta."}},
+      {id:"s1-b",label:"Acolher e assumir o caso",
+       text:"Rafael, você já entrou em contato três vezes e recebeu prazos diferentes. Isso é desgastante e eu entendo sua irritação. Vou assumir o seu caso agora. Para ajudar de forma objetiva, o que você já foi informado até aqui?",
+       scores:{emp:3,com:2,res:1},trust:2,flags:[],next:"s2b",
+       shows:"Validação da emoção combinada à assunção de responsabilidade",
+       risk:"Empatia sem ação rápida pode ser percebida como discurso",
+       fb:{comunica:"Que a experiência dele foi vista e que passa a haver um responsável pelo caso.",
+         comportamento:"Escuta ativa, validação da emoção sem justificativas e assunção de responsabilidade.",
+         consequencia:"O tom de Rafael baixa um pouco, mas ele testa se a empatia virá acompanhada de ação: pedir desculpa é fácil, diz ele.",
+         recomendacao:"Mantenha o ritmo. Depois de acolher, traga logo um passo concreto para que a empatia ganhe credibilidade."}},
+      {id:"s1-c",label:"Explicar o fluxo interno",
+       text:"Rafael, os prazos diferentes aconteceram porque o chamado passa por duas filas de atendimento e cada uma trabalha com um SLA próprio. Quero te explicar como funciona para ficar claro.",
+       scores:{emp:1,com:3,res:1},trust:-1,flags:[],next:"s2c",
+       shows:"Clareza sobre o funcionamento interno do processo",
+       risk:"Explicar cedo demais soa como justificativa",
+       fb:{comunica:"Que a empresa se explica antes de ouvir. A explicação, mesmo correta, soa como justificativa.",
+         comportamento:"Transparência e domínio do processo, aplicados antes da escuta.",
+         consequencia:"Rafael se fecha. Para ele, fila e SLA são problemas da empresa, não dele, e a conversa assume um tom defensivo.",
+         recomendacao:"Deixe explicações de processo para depois de entender o que o cliente viveu e o que ele precisa."}}
+    ]},
+  s2a:{id:"s2a",moment:2,
+    prompt:"Rafael aceitou a consulta, mas segue impaciente. Como você conduz a escuta?",
+    client:[{emotion:"impaciente",text:"Pode olhar, mas já aviso que repeti essa história duas vezes. É sobre uma cobrança duplicada no plano Business, dia 14. Primeiro disseram dois dias, depois cinco, e ontem falaram que o chamado foi reencaminhado. E ninguém me retornou."}],
+    options:S2_OPTIONS},
+  s2b:{id:"s2b",moment:2,
+    prompt:"Rafael acolheu sua abertura, mas duvida de que haverá ação. Como você conduz a escuta?",
+    client:[{emotion:"cetico",text:"Pedir desculpa é fácil, já fizeram isso antes. Abri o chamado dia 14 por causa de uma cobrança duplicada no plano Business. Disseram dois dias, depois cinco, e ontem falaram em reencaminhamento. Quero saber o que realmente aconteceu."}],
+    options:S2_OPTIONS},
+  s2c:{id:"s2c",moment:2,
+    prompt:"Rafael reagiu à explicação com defensividade. Como você retoma a conversa?",
+    client:[{emotion:"defensivo",text:"Não me interessa como funcionam as filas de vocês. Eu paguei duas vezes o plano Business e ninguém corrigiu. Isso é problema da empresa, não meu."}],
+    options:S2_OPTIONS},
+  s3:{id:"s3",moment:3,
+    prompt:"O sistema mostra que o estorno foi aprovado, mas está parado no financeiro há uma semana, e o reencaminhamento foi um erro interno. Como você comunica isso?",
+    client:[
+      {when:{flag:"confirmed"},emotion:"reservado",text:"Isso mesmo, é isso. Então o que o sistema mostra? Quero saber a verdade, sem enrolação."},
+      {when:{flag:"facts"},emotion:"impaciente",text:"E então, achou alguma coisa? Estou esperando faz um bom tempo e continuo sem saber onde está o meu dinheiro."},
+      {emotion:"impaciente",text:"Agradeço por ouvir, mas continuo sem saber o essencial: onde está o meu dinheiro e por que o chamado foi reencaminhado?"}],
+    options:[
+      {id:"s3-a",label:"Dizer o que aconteceu, sem rodeios",
+       text:"O sistema mostra que a cobrança duplicada foi confirmada e o estorno foi aprovado, mas está parado no financeiro desde a semana passada. O reencaminhamento foi um erro nosso e os prazos divergentes vieram de falha de comunicação. Não vou prometer um prazo que não controlo, mas posso acompanhar isso pessoalmente.",
+       scores:{emp:1,com:3,res:2},trust:1,flags:["transparent","admitted"],next:"s4a",
+       shows:"Comunicar falhas internas com franqueza e limites claros",
+       risk:"Franqueza sem acolhimento pode ampliar a irritação do momento",
+       fb:{comunica:"Fato, causa e limite do que você controla, sem esconder falhas.",
+         comportamento:"Transparência e responsabilidade institucional, com expectativa realista.",
+         consequencia:"Rafael não gosta da notícia, mas reconhece a franqueza. O diálogo passa a girar em torno de soluções, não de culpados.",
+         recomendacao:"Depois de uma notícia difícil, dê uma pausa para o cliente reagir e só então proponha o próximo passo."}},
+      {id:"s3-b",label:"Suavizar e informar o prazo padrão",
+       text:"Seu estorno foi aprovado e está em processamento. Normalmente o financeiro conclui em até cinco dias úteis, então é só aguardar.",
+       scores:{emp:1,com:1,res:2},trust:-2,flags:["vague"],next:"s4b",
+       shows:"Intenção de reduzir a tensão e oferecer previsibilidade",
+       risk:"Informação incompleta compromete a credibilidade quando o cliente percebe",
+       fb:{comunica:"Que está tudo sob controle, omitindo o atraso real e a falha no reencaminhamento.",
+         comportamento:"Tentativa de tranquilizar e reduzir a tensão, com informação incompleta.",
+         consequencia:"Rafael percebe a imprecisão: cinco dias foi justamente um dos prazos que já havia ouvido. A confiança cai e ele passa a exigir outra solução ou um supervisor.",
+         recomendacao:"Se a informação é desconfortável, diga-a por completo. A informação suavizada é descoberta depois e custa mais confiança."}},
+      {id:"s3-c",label:"Assumir a falha e prometer retorno hoje",
+       text:"Houve uma falha nossa no reencaminhamento e peço desculpas. O estorno está aprovado, mas travado no financeiro. Vou pedir prioridade e volto ainda hoje com a data confirmada.",
+       scores:{emp:2,com:1,res:2},trust:1,flags:["promised","admitted"],next:"s4a",
+       shows:"Assumir a falha com compromisso de retorno no mesmo dia",
+       risk:"Prometer algo que depende de terceiros cria risco de nova quebra de expectativa",
+       fb:{comunica:"Responsabilidade e compromisso com um retorno em horário definido.",
+         comportamento:"Assunção de erro e proatividade, com uma promessa que depende de outra área.",
+         consequencia:"Rafael acolhe a postura e passa a cobrar o cumprimento: o retorno de hoje vira o critério de confiança daí em diante.",
+         recomendacao:"Prometa apenas o que depende de você, como retornar, e não o que depende de outras áreas, como a data do estorno."}}
+    ]},
+  s4a:{id:"s4a",moment:4,
+    prompt:"Rafael entendeu a situação e agora quer saber o que pode ser feito. Que alternativa você apresenta?",
+    client:[
+      {when:{flag:"promised"},emotion:"reservado",text:"Você disse que volta hoje com a data. Certo. Mas, enquanto isso, o que vocês podem fazer de concreto? Tenho fechamento de caixa e esse dinheiro faz falta."},
+      {emotion:"reservado",text:"Certo, agora estou entendendo melhor. O que vocês podem fazer de concreto? Tenho fechamento de caixa e esse dinheiro faz falta."}],
+    options:[
+      {id:"s4a-a",label:"Oferecer desconto nas próximas faturas",
+       text:"Como forma de compensar o transtorno, posso aplicar 20% de desconto nas próximas duas faturas, além de seguir com o estorno.",
+       scores:{emp:2,com:1,res:1},trust:0,flags:["compensation"],next:"s5",
+       shows:"Reconhecer o transtorno com um gesto de reparação",
+       risk:"Compensação sem resolver o problema central pode parecer desvio",
+       fb:{comunica:"Reconhecimento do transtorno por meio de compensação financeira.",
+         comportamento:"Empatia expressa em reparação, sem alterar o encaminhamento do problema principal.",
+         consequencia:"Rafael agradece, mas diz que desconto não devolve o dinheiro do caixa de hoje. O problema principal segue aberto.",
+         recomendacao:"Use a compensação como complemento da solução, nunca como substituto. Trate primeiro o problema original."}},
+      {id:"s4a-b",label:"Priorizar o estorno e combinar contato",
+       text:"Vou abrir agora um pedido de prioridade ao financeiro com o seu protocolo e te ligo hoje às 17h com o status, mesmo que não haja novidade. Depois da ligação, envio um resumo por escrito.",
+       scores:{emp:2,com:3,res:1},trust:2,flags:["solutionProvided","followUp"],next:"s5",
+       shows:"Rotina de acompanhamento com horário e canal definidos",
+       risk:"O combinado precisa ser cumprível e registrado",
+       fb:{comunica:"Previsibilidade: Rafael sabe quando e como será procurado.",
+         comportamento:"Comunicação proativa e clara, com combinado e horário.",
+         consequencia:"Rafael valoriza ter horário e canal, mas pergunta se desta vez será diferente. A confiança cresce, ainda frágil.",
+         recomendacao:"Verifique se o compromisso é cumprível e registre-o no chamado."}},
+      {id:"s4a-c",label:"Propor crédito provisório e prioridade",
+       text:"Posso solicitar um crédito do valor duplicado na sua próxima fatura enquanto o estorno não conclui, e pedir prioridade ao financeiro. Se isso funcionar para você, já registro agora.",
+       scores:{emp:1,com:2,res:3},trust:1,flags:["solutionProvided","provisionalCredit"],next:"s5",
+       shows:"Alternativa concreta que reduz o impacto financeiro imediato",
+       risk:"Falta explicar limites e garantias da alternativa",
+       fb:{comunica:"Uma solução concreta que reduz o impacto financeiro imediato.",
+         comportamento:"Resolução de problemas: alternativa viável, apresentada com pedido de consentimento.",
+         consequencia:"Rafael avalia a proposta como concreta, mas pergunta se é garantia ou só mais uma promessa. A negociação passa a girar em torno de garantia.",
+         recomendacao:"Explique limites e riscos, como valor, tempo e aprovação, e confirme se a alternativa atende à necessidade dele."}}
+    ]},
+  s4b:{id:"s4b",moment:4,
+    prompt:"Rafael não aceita mais prazos e ameaça pedir um supervisor. Que alternativa você apresenta?",
+    client:[{emotion:"irritado",text:"Mais cinco dias? Já me deram prazos demais. Ou vocês resolvem de outro jeito, ou quero falar com alguém acima de você."}],
+    options:[
+      {id:"s4b-a",label:"Escalar agora para o financeiro",
+       text:"Entendo. Vou acionar agora a coordenação do financeiro para tratar o estorno como urgente e acompanho até ter uma resposta. Hoje volto a falar com você com o que eles disserem, seja positivo ou não.",
+       scores:{emp:1,com:2,res:3},trust:1,flags:["escalated","solutionProvided"],next:"s5",
+       shows:"Escalonar com acompanhamento em vez de empurrar prazo",
+       risk:"Escalar sem alinhar o resultado esperado pode gerar nova expectativa",
+       fb:{comunica:"Ação imediata diante da desconfiança: você assume a ponte com a área responsável.",
+         comportamento:"Iniciativa e autonomia na resolução, com escalonamento oportuno.",
+         consequencia:"Rafael deixa de pedir um supervisor por ora, mas avisa que a credibilidade será medida pela entrega.",
+         recomendacao:"Explique o que o escalonamento muda na prática e quando ele terá notícias."}},
+      {id:"s4b-b",label:"Manter o prazo e não prometer o que não controla",
+       text:"Entendo, mas o prazo do estorno depende do financeiro e não posso garantir antes dele. O que posso fazer é incluir seu caso na fila de prioridade e te avisar quando houver movimento.",
+       scores:{emp:0,com:3,res:2},trust:0,flags:["honestLimit"],next:"s5",
+       shows:"Honestidade sobre o que está e o que não está sob seu controle",
+       risk:"Sem alternativa para a urgência, a franqueza soa como falta de solução",
+       fb:{comunica:"Transparência sobre limites, mas sem alternativa real para a urgência dele.",
+         comportamento:"Honestidade e clareza, com pouca flexibilidade para buscar saídas.",
+         consequencia:"Rafael ouve a franqueza, mas a interpreta como falta de solução. A frustração permanece e ele começa a cogitar o cancelamento.",
+         recomendacao:"Combine honestidade com alternativa: diga o que não pode fazer e, na sequência, o que pode."}},
+      {id:"s4b-c",label:"Oferecer desconto para recompor a relação",
+       text:"Peço desculpas pela situação e posso conceder 20% de desconto nas próximas faturas enquanto resolvemos.",
+       scores:{emp:2,com:1,res:1},trust:-1,flags:["compensation"],next:"s5",
+       shows:"Gesto de reparação diante do transtorno",
+       risk:"Contorna o que o cliente realmente quer: o dinheiro de volta",
+       fb:{comunica:"Tentativa de compensar o transtorno sem mudar o que ele quer: o dinheiro de volta.",
+         comportamento:"Gesto de reparação e empatia, que evita o núcleo do problema.",
+         consequencia:"Rafael reage mal. Sente que tentam comprá-lo e reforça o pedido de falar com um supervisor.",
+         recomendacao:"Antes de oferecer compensação, apresente um caminho para a solução do problema original."}}
+    ]},
+  s5:{id:"s5",moment:5,
+    prompt:"Rafael resiste à proposta. Como você conduz a negociação?",
+    client:[
+      {when:{choseAny:["s4a-a","s4b-c"]},emotion:"irritado",text:"Desconto não resolve o que aconteceu. Eu quero meu dinheiro de volta e uma garantia de que isso não vai se repetir."},
+      {when:{chose:"s4b-b"},emotion:"reservado",text:"Pelo menos você foi direto. Mas sem prazo, como eu planejo meu caixa? Preciso de alguma garantia."},
+      {when:{chose:"s4a-b"},emotion:"cetico",text:"Ligação às 17h, certo. Mas por que eu deveria acreditar que dessa vez vai ser diferente? Já fui enrolado antes."},
+      {emotion:"cetico",text:"Entendi a proposta. Mas já ouvi promessas antes. Como eu sei que isso vai andar de verdade?"}],
+    options:[
+      {id:"s5-a",label:"Registrar o compromisso por escrito",
+       text:"Faz sentido desconfiar. Vou registrar agora tudo no chamado e enviar por e-mail o resumo com protocolo e meu contato direto. Se o estorno não andar até a data combinada, você me chama e eu escalo na hora.",
+       scores:{emp:1,com:2,res:3},trust:1,flags:["documented"],next:"s6",
+       shows:"Compromisso rastreável: o quê, quem e quando",
+       risk:"Falta confirmar com o cliente se o combinado atende à necessidade dele",
+       fb:{comunica:"Responsabilidade rastreável: o combinado deixa de depender de memória e boa vontade.",
+         comportamento:"Estruturação do compromisso (o quê, quem, quando) e acolhimento da desconfiança.",
+         consequencia:"Rafael baixa o tom. Ter algo por escrito responde à sensação de ter sido enrolado.",
+         recomendacao:"Peça que ele confirme o combinado para evitar mal-entendidos sobre prazos."}},
+      {id:"s5-b",label:"Assumir um retorno pessoal",
+       text:"Desconfiar é natural depois de tudo isso. Não controlo o financeiro, mas controlo o meu retorno: amanhã às 10h te ligo com o status, haja ou não novidade. Posso contar com esse horário?",
+       scores:{emp:3,com:2,res:1},trust:1,flags:["callPromise"],next:"s6",
+       shows:"Empatia com compromisso limitado ao que está sob seu controle",
+       risk:"O compromisso pessoal ainda não está registrado no chamado",
+       fb:{comunica:"Proximidade e compromisso pessoal, com honestidade sobre o que não depende de você.",
+         comportamento:"Empatia aliada a um compromisso realista.",
+         consequencia:"Rafael aprecia a sinceridade sobre o limite e o horário combinado, mas quer ver o cumprimento antes de relaxar.",
+         recomendacao:"Registre o horário no chamado e confirme também por escrito."}},
+      {id:"s5-c",label:"Encaminhar para o supervisor",
+       text:"Se preferir, transfiro você para o meu supervisor, que tem mais autonomia para tratar de compensação e prazos.",
+       scores:{emp:1,com:1,res:2},trust:-1,flags:["delegated"],next:"s6",
+       shows:"Reconhecer limite de alçada e acionar uma instância superior",
+       risk:"A transferência pode ser sentida como abandono do caso",
+       fb:{comunica:"Que você não tem autonomia ou prefere passar a responsabilidade. O caso vai mudar de mãos.",
+         comportamento:"Reconhecimento de limite de alçada e acesso a instância superior, com perda de propriedade sobre o caso.",
+         consequencia:"Rafael aceita falar com o supervisor, mas terá de recontar a história pela quarta vez. A sensação de ser transferido pesa.",
+         recomendacao:"Se escalar for necessário, faça a passagem a quente: apresente o caso ao supervisor para que o cliente não precise repetir."}}
+    ]},
+  s6:{id:"s6",moment:6,
+    prompt:"É hora de encerrar. Como você fecha o atendimento?",
+    client:[
+      {when:{trustMin:6},emotion:"receptivo",text:"Tudo bem, vou aguardar. Só deixo claro que esperava mais agilidade desde o início."},
+      {when:{trustMin:3},emotion:"reservado",text:"Vou esperar até sexta. Se não resolverem, eu cancelo mesmo."},
+      {emotion:"irritado",text:"Honestamente, já estou decidido a cancelar. Só quero saber como faço."}],
+    options:[
+      {id:"s6-a",label:"Fechar com resumo dos combinados",
+       text:"Para fecharmos: protocolo do chamado 48213 com prioridade no estorno, retorno por telefone conforme combinado e resumo enviado agora por e-mail com as datas. Falta algo ou ficou alguma dúvida?",
+       scores:{emp:1,com:3,res:2},trust:1,flags:["closed"],next:"END",
+       shows:"Fechamento estruturado, com próximos passos e responsáveis claros",
+       risk:"Sem reconhecimento do desgaste, o fechamento fica frio",
+       fb:{comunica:"Clareza sobre o que acontece a seguir e quem é responsável.",
+         comportamento:"Fechamento estruturado e checagem final de entendimento.",
+         consequencia:"Rafael confirma o resumo e sabe o que esperar. O encerramento se apoia em fatos, mas com pouco calor humano.",
+         recomendacao:"Acrescente uma frase de reconhecimento do desgaste vivido para fechar também a dimensão emocional."}},
+      {id:"s6-b",label:"Fechar com acolhimento",
+       text:"Agradeço a paciência, Rafael. Sei o quanto foi desgastante para você e vou cuidar do seu caso de perto. Fico à disposição.",
+       scores:{emp:3,com:1,res:1},trust:0,flags:["warmClose"],next:"END",
+       shows:"Cuidado e disponibilidade no encerramento",
+       risk:"Sem datas e responsáveis, o acolhimento fica sem lastro",
+       fb:{comunica:"Cuidado e disponibilidade, sem detalhar os próximos passos.",
+         comportamento:"Empatia no encerramento, com pouca especificidade.",
+         consequencia:"Rafael agradece o tom, mas encerra sem clareza do que vai acontecer. A confiança final depende do que foi construído antes.",
+         recomendacao:"Inclua datas e responsáveis para que o acolhimento tenha lastro."}},
+      {id:"s6-c",label:"Devolver a decisão ao cliente",
+       text:"Respeito se decidir cancelar e, se isso acontecer, cuido do cancelamento sem burocracia. Se aceitar aguardar até sexta, eu te mantenho informado a cada atualização. O que prefere?",
+       scores:{emp:2,com:2,res:1},trust:1,flags:["autonomy"],next:"END",
+       shows:"Respeito à autonomia do cliente sobre a própria decisão",
+       risk:"Deixa a retenção em aberto e não detalha a solução",
+       fb:{comunica:"Respeito à autonomia, devolvendo ao cliente o controle da decisão.",
+         comportamento:"Empatia e transparência, com menos foco em detalhar a solução.",
+         consequencia:"Rafael valoriza ter o controle da decisão. Em geral isso reduz o confronto, embora deixe a retenção em aberto.",
+         recomendacao:"Mesmo oferecendo autonomia, confirme o que será feito nos próximos dias para evitar que a resposta fique aberta."}}
+    ]}
+};
+
+const OUTCOMES = {
+  positive:{key:"positive",chip:"ok",label:"Desfecho positivo: confiança recuperada",
+    client:"Certo. Obrigado por assumir isso. Aguardo o seu retorno e o estorno.",
+    narrative:"Rafael encerra o atendimento mais tranquilo. Ele entende o que aconteceu, sabe o que será feito e quando será procurado. O contrato permanece ativo e a confiança começa a ser reconstruída sobre compromissos claros."},
+  neutral:{key:"neutral",chip:"warn",label:"Desfecho intermediário: caso encaminhado, confiança frágil",
+    client:"Ok. Vou aguardar, mas fica registrado que a minha confiança está abalada.",
+    narrative:"O estorno foi encaminhado e Rafael aceita aguardar, sem entusiasmo. A confiança segue frágil: ele vai observar se os compromissos serão cumpridos antes de decidir sobre a continuidade do contrato."},
+  critical:{key:"critical",chip:"risk",label:"Desfecho crítico: escalonamento e risco de cancelamento",
+    client:"Prefiro tratar o cancelamento direto com o seu supervisor. Já perdi tempo demais.",
+    narrative:"Rafael encerra a conversa sem confiança de que o problema será resolvido, pede escalonamento e manifesta a intenção de encerrar o contrato. O caso exigirá recuperação por parte da liderança."}
+};
+
+/* Notas narrativas que dependem do histórico de decisões. */
+const HISTORY_NOTES = [
+  {when:{flag:"vague"},text:"A informação suavizada sobre o estorno, no momento 3, foi percebida como imprecisa e passou a pesar nas respostas seguintes de Rafael."},
+  {when:{flag:"transparent"},text:"A franqueza sobre a falha interna, no momento 3, criou uma base para conversas mais objetivas."},
+  {when:{flag:"compensation",notFlag:"solutionProvided"},text:"As ofertas de desconto não resolveram o ponto central, o estorno, e foram percebidas como tentativa de compensar sem solucionar."},
+  {when:{flagAny:["documented","followUp"]},text:"Os combinados com data, canal e registro deram previsibilidade ao acompanhamento."},
+  {when:{flag:"delegated"},text:"A transferência ao supervisor obrigou Rafael a recontar a história e enfraqueceu a sensação de ter um responsável pelo caso."},
+  {when:{flag:"escalated"},text:"O escalonamento imediato ao financeiro mostrou iniciativa e reduziu a pressão por um supervisor."}
+];
+
+const CONFIG = {
+  totalDecisions:6, startScene:"s1", startTrust:3, maxTrust:10,
+  thresholds:{positiveScore:68, positiveTrust:6, criticalTrust:2, criticalScore:35},
+  storageKey:"decisionlab_v1"
+};
+
+/* =====================================================================
+   B. UTILITÁRIOS
+   ===================================================================== */
+const $  = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = (n,a,b) => Math.min(b, Math.max(a, n));
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const ICONS = {
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/><path d="M12 7v5l3 2"/>',
+  heart:'<path d="M12 20s-7-4.4-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.6-9 9-9 9z"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.5 7.2L4 20l1-4.5A8 8 0 1 1 21 12z"/>',
+  route:'<circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  gauge:'<path d="M4 18a9 9 0 1 1 16 0"/><path d="M12 14l4-5"/>',
+  branch:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 11.5C13 11 13 6 15.5 6M8.5 12.5C13 13 13 18 15.5 18"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  check:'<path d="M5 12l5 5 9-10"/>',
+  print:'<path d="M7 9V3h10v6"/><rect x="4" y="9" width="16" height="8" rx="2"/><path d="M7 14h10v7H7z"/>',
+  refresh:'<path d="M20 11a8 8 0 0 0-14-4M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  alert:'<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.01"/>',
+  play:'<path d="M7 4l13 8-13 8z"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/>',
+  up:'<path d="M12 19V5M6 11l6-6 6 6"/>', down:'<path d="M12 5v14M6 13l6 6 6-6"/>', same:'<path d="M5 12h14"/>',
+  eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'
+};
+const icon = n => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]||""}</svg>`;
+const fmtDate = iso => { try { return new Date(iso).toLocaleString("pt-BR",{dateStyle:"medium",timeStyle:"short"}); } catch(e){ return "Data indisponível"; } };
+const bandOf = p => p >= 70 ? {label:"Em destaque nesta simulação",cls:"ok",key:"high"} : p >= 45 ? {label:"Consistente, com pontos a desenvolver",cls:"warn",key:"mid"} : {label:"Em desenvolvimento",cls:"risk",key:"low"};
+const outcomeKeyOf = o => o.key;
+
+function announce(msg){ const a=$("#announcer"); a.textContent=""; setTimeout(()=>{ a.textContent=msg; },60); }
+function toast(msg, ms=5200){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>{ t.hidden=true; },ms); }
+function focusEl(el){ if(!el) return; if(!el.hasAttribute("tabindex") && !/^(A|BUTTON|INPUT|SELECT|TEXTAREA)$/.test(el.tagName)) el.setAttribute("tabindex","-1"); el.focus(); }
+function confirmDialog({title,text,confirmLabel="Confirmar",danger=false}){
+  return new Promise(resolve=>{
+    const dlg=$("#dlg");
+    if(typeof dlg.showModal!=="function"){ resolve(window.confirm(title+"\n\n"+text)); return; }
+    $("#dlg-title").textContent=title; $("#dlg-text").textContent=text;
+    const ok=$("#dlg-ok"); ok.textContent=confirmLabel; ok.className="btn "+(danger?"danger solid":"primary");
+    dlg.returnValue="cancel";
+    dlg.addEventListener("close",()=>resolve(dlg.returnValue==="ok"),{once:true});
+    dlg.showModal(); $("#dlg-cancel").focus();
+  });
+}
+
+/* =====================================================================
+   C. MOTOR DE RAMIFICAÇÃO E AVALIAÇÃO
+   O estado é sempre derivado da lista de decisões: [{scene, option}].
+   Isso garante coerência entre simulação, persistência e relatório.
+   ===================================================================== */
+function matches(c, st){
+  if(!c) return true;
+  if(c.flag && !st.flags[c.flag]) return false;
+  if(c.notFlag && st.flags[c.notFlag]) return false;
+  if(c.flagAny && !c.flagAny.some(f=>st.flags[f])) return false;
+  if(c.trustMin!==undefined && st.trust < c.trustMin) return false;
+  if(c.trustMax!==undefined && st.trust > c.trustMax) return false;
+  if(c.chose && !st.chosen.includes(c.chose)) return false;
+  if(c.choseAny && !c.choseAny.some(o=>st.chosen.includes(o))) return false;
+  return true;
+}
+function pickVariant(scene, st){ return scene.client.find(v=>matches(v.when, st)) || scene.client[scene.client.length-1]; }
+function pickText(x, scene){ return typeof x==="string" ? x : (x[scene.id] || Object.values(x)[0]); }
+
+function computeState(decisions){
+  const st={sceneId:CONFIG.startScene,trust:CONFIG.startTrust,scores:{emp:0,com:0,res:0},flags:{},chosen:[],trail:[],finished:false};
+  decisions.forEach((d,i)=>{
+    if(st.sceneId==="END") throw new Error("Decisões além do encerramento");
+    const scene=SCENES[st.sceneId];
+    if(!scene || d.scene!==scene.id) throw new Error("Cena inconsistente");
+    const idx=scene.options.findIndex(o=>o.id===d.option);
+    if(idx<0) throw new Error("Alternativa inexistente");
+    const option=scene.options[idx], variant=pickVariant(scene,st), before=st.trust;
+    COMP_KEYS.forEach(c=>{ st.scores[c]+=option.scores[c]; });
+    st.trust=clamp(st.trust+option.trust,0,CONFIG.maxTrust);
+    option.flags.forEach(f=>{ st.flags[f]=true; });
+    st.chosen.push(option.id);
+    st.trail.push({n:i+1,scene,option,variant,index:idx,trustBefore:before,trustAfter:st.trust});
+    st.sceneId=option.next;
+  });
+  st.finished=st.sceneId==="END";
+  return st;
+}
+
+const _maxMemo={};
+function maxFrom(id,c){
+  if(id==="END") return 0;
+  const k=id+":"+c; if(k in _maxMemo) return _maxMemo[k];
+  return _maxMemo[k]=Math.max(...SCENES[id].options.map(o=>o.scores[c]+maxFrom(o.next,c)));
+}
+
+function computeResult(decisions){
+  const st=computeState(decisions);
+  if(!st.finished) throw new Error("Simulação incompleta");
+  const pct={}; COMP_KEYS.forEach(c=>{ pct[c]=clamp(Math.round(st.scores[c]/maxFrom(CONFIG.startScene,c)*100),0,100); });
+  const overall=clamp(Math.round(COMP_KEYS.reduce((a,c)=>a+pct[c],0)/COMP_KEYS.length),0,100);
+  const T=CONFIG.thresholds; let key="neutral";
+  if(st.trust<=T.criticalTrust || overall<T.criticalScore || (st.flags.vague && st.flags.delegated)) key="critical";
+  else if(st.trust>=T.positiveTrust && overall>=T.positiveScore && !(st.flags.vague && !st.flags.escalated)) key="positive";
+  return {st,pct,overall,trust:st.trust,outcome:OUTCOMES[key],notes:HISTORY_NOTES.filter(n=>matches(n.when,st)).map(n=>n.text)};
+}
+
+/* Verificação de integridade do grafo de cenas (executada ao iniciar). */
+function validateScenario(){
+  const errs=[]; const seen=new Set();
+  (function walk(id,depth,stack){
+    if(id==="END") return;
+    const s=SCENES[id]; if(!s){ errs.push("Cena inexistente: "+id); return; }
+    if(stack.includes(id)){ errs.push("Ciclo na cena "+id); return; }
+    seen.add(id);
+    if(s.options.length!==3) errs.push("A cena "+id+" não tem 3 alternativas");
+    if(!s.client||!s.client.length) errs.push("A cena "+id+" não tem fala do cliente");
+    s.options.forEach(o=>{
+      COMP_KEYS.forEach(c=>{ if(!(o.scores[c]>=0&&o.scores[c]<=3)) errs.push("Pontuação inválida em "+o.id); });
+      if(!(o.fb&&o.fb.comunica&&o.fb.comportamento&&o.fb.consequencia&&o.fb.recomendacao)) errs.push("Feedback incompleto em "+o.id);
+      walk(o.next,depth+1,stack.concat(id));
+    });
+  })(CONFIG.startScene,0,[]);
+  Object.keys(SCENES).forEach(id=>{ if(!seen.has(id)) errs.push("Cena inalcançável: "+id); });
+  // todas as rotas devem ter exatamente 6 decisões
+  (function len(id,d){ if(id==="END"){ if(d!==CONFIG.totalDecisions) errs.push("Rota com "+d+" decisões"); return; } SCENES[id]&&SCENES[id].options.forEach(o=>len(o.next,d+1)); })(CONFIG.startScene,0);
+  return errs;
+}
+
+/* =====================================================================
+   D. PERSISTÊNCIA (localStorage versionado, com validação)
+   ===================================================================== */
+const app={store:null,screen:"dashboard",reportId:null,reportFresh:false,selected:null,locked:false,typingTimer:null,storageWarned:false,notice:null};
+const emptyStore=()=>({version:1,current:null,history:[]});
+
+function sanitizeStore(raw){
+  const out=emptyStore(); let dropped=0;
+  if(!raw||typeof raw!=="object"||raw.version!==1) return {store:out,dropped:1};
+  const okDecisions=arr=>Array.isArray(arr)&&arr.every(d=>d&&typeof d.scene==="string"&&typeof d.option==="string");
+  if(raw.current){
+    try{
+      if(!okDecisions(raw.current.decisions)) throw new Error("formato");
+      const st=computeState(raw.current.decisions);
+      if(st.finished) throw new Error("já concluída");
+      out.current={startedAt:typeof raw.current.startedAt==="string"?raw.current.startedAt:new Date().toISOString(),decisions:raw.current.decisions.map(d=>({scene:d.scene,option:d.option})),awaitingContinue:!!raw.current.awaitingContinue&&raw.current.decisions.length>0};
+    }catch(e){ dropped++; }
+  }
+  if(Array.isArray(raw.history)){
+    raw.history.forEach(a=>{
+      try{
+        if(!a||typeof a.id!=="string"||typeof a.date!=="string"||isNaN(new Date(a.date))||!okDecisions(a.decisions)) throw new Error("formato");
+        const r=computeResult(a.decisions);
+        out.history.push({id:a.id,date:a.date,decisions:a.decisions.map(d=>({scene:d.scene,option:d.option})),summary:{overall:r.overall,outcome:r.outcome.key,pct:r.pct,trust:r.trust}});
+      }catch(e){ dropped++; }
+    });
+  }
+  return {store:out,dropped};
+}
+function loadStore(){
+  let raw=null;
+  try{ raw=localStorage.getItem(CONFIG.storageKey); }catch(e){ app.storageWarned=true; return emptyStore(); }
+  if(!raw) return emptyStore();
+  let parsed; try{ parsed=JSON.parse(raw); }catch(e){ app.notice="Os dados salvos estavam corrompidos e foram reiniciados."; return emptyStore(); }
+  const {store,dropped}=sanitizeStore(parsed);
+  if(dropped) app.notice="Alguns registros salvos estavam inválidos e foram ignorados.";
+  return store;
+}
+function saveStore(){
+  try{ localStorage.setItem(CONFIG.storageKey,JSON.stringify(app.store)); }
+  catch(e){ if(!app.storageWarned){ app.storageWarned=true; toast("Não foi possível salvar neste navegador. O progresso será mantido apenas enquanto esta página estiver aberta."); } }
+}
+const newCurrent=()=>({startedAt:new Date().toISOString(),decisions:[],awaitingContinue:false});
+
+/* =====================================================================
+   E. NAVEGAÇÃO ENTRE TELAS
+   ===================================================================== */
+const SCREEN_TITLES={dashboard:"Início",briefing:"Briefing da simulação",sim:"Simulador de conversa",report:"Relatório da simulação",history:"Histórico de tentativas"};
+function go(name,opts={}){
+  clearTimeout(app.typingTimer); app.typingTimer=null; app.selected=null; app.locked=false;
+  app.screen=name;
+  $$(".screen").forEach(s=>{ s.hidden=s.id!=="screen-"+name; });
+  ({dashboard:renderDashboard,briefing:renderBriefing,sim:()=>renderSim(opts.sim||{}),report:renderReport,history:renderHistory})[name]();
+  $("#nav-dashboard").toggleAttribute("aria-current",name!=="history"); $("#nav-history").toggleAttribute("aria-current",name==="history");
+  if(name!=="history") $("#nav-dashboard").setAttribute("aria-current","page"); else $("#nav-history").setAttribute("aria-current","page");
+  if(name==="history") $("#nav-dashboard").removeAttribute("aria-current"); else $("#nav-history").removeAttribute("aria-current");
+  if(opts.focus!==false){ window.scrollTo(0,0); if(name!=="sim") focusEl($("#screen-"+name+" h1")); }
+  if(opts.focus!==false) announce(SCREEN_TITLES[name]);
+}
+
+/* =====================================================================
+   F. RENDERIZAÇÃO: DASHBOARD
+   ===================================================================== */
+function compList(){
+  return `<ul class="comp-list">${COMP_KEYS.map(c=>`<li><span class="comp-ic">${icon(COMPETENCIES[c].icon)}</span><div><b>${COMPETENCIES[c].name}</b><span class="d">${COMPETENCIES[c].desc}</span></div></li>`).join("")}</ul>`;
+}
+function attemptRow(a,withActions){
+  const o=OUTCOMES[a.summary.outcome]||OUTCOMES.neutral;
+  return `<div class="attempt">
+    <div class="score-badge" aria-label="Pontuação ${a.summary.overall} de 100">${a.summary.overall}</div>
+    <div>
+      <div class="row"><b>${esc(fmtDate(a.date))}</b><span class="chip ${o.chip}">${esc(o.label.split(":")[0])}</span></div>
+      <div class="mini-bars">${COMP_KEYS.map(c=>`<div><small><span>${COMPETENCIES[c].name}</span><span>${a.summary.pct[c]}%</span></small><div class="bar" role="img" aria-label="${COMPETENCIES[c].name}: ${a.summary.pct[c]} por cento"><span style="width:${a.summary.pct[c]}%"></span></div></div>`).join("")}</div>
+    </div>
+    <div class="row">
+      <button class="btn small" type="button" data-action="view-report" data-id="${esc(a.id)}">${icon("eye")}Ver relatório</button>
+      ${withActions?`<button class="btn small danger" type="button" data-action="delete-one" data-id="${esc(a.id)}" aria-label="Excluir tentativa de ${esc(fmtDate(a.date))}">${icon("trash")}Excluir</button>`:""}
+    </div>
+  </div>`;
+}
+function renderDashboard(){
+  const cur=app.store.current, hist=app.store.history;
+  const done=cur?cur.decisions.length:0;
+  $("#screen-dashboard").innerHTML=`
+  <div class="page-head"><h1 tabindex="-1">Bem-vindo ao DecisionLab</h1>
+    <p>Pratique decisões profissionais em cenários simulados, veja as consequências de cada escolha e receba feedback formativo sobre as suas competências.</p></div>
+  ${app.notice?`<div class="notice" role="status" style="margin-bottom:20px">${icon("alert")}<span>${esc(app.notice)}</span></div>`:""}
+  <div class="grid-2">
+    <div class="stack">
+      <article class="card" aria-labelledby="sc-title">
+        <div class="row"><span class="chip">Atendimento ao cliente</span><span class="chip plain">Cenário disponível</span></div>
+        <h2 id="sc-title" style="font-size:1.55rem;margin:14px 0 8px">Cliente em situação de conflito</h2>
+        <p class="muted" style="max-width:62ch">Você é especialista de atendimento na Nexora. Rafael Martins, cliente há mais de dois anos, ameaça cancelar o contrato depois de receber prazos contraditórios sobre uma cobrança duplicada.</p>
+        <ul class="facts">
+          <li>${icon("gauge")}Dificuldade: intermediária</li>
+          <li>${icon("clock")}Duração estimada: 8 a 12 minutos</li>
+          <li>${icon("branch")}6 decisões e 3 desfechos possíveis</li>
+        </ul>
+        <h3 style="margin:22px 0 12px">Competências trabalhadas</h3>
+        ${compList()}
+        <div class="row" style="margin-top:24px">
+          ${cur?`<button class="btn primary" type="button" data-action="resume">${icon("play")}Continuar simulação</button>
+                 <button class="btn" type="button" data-action="start">${icon("refresh")}Começar do zero</button>
+                 <span class="muted" style="font-size:.92rem">${done} de ${CONFIG.totalDecisions} decisões feitas</span>`
+              :`<button class="btn primary" type="button" data-action="start">${icon("play")}Iniciar simulação</button>`}
+        </div>
+      </article>
+      <section class="card" aria-labelledby="recent-title">
+        <div class="row" style="justify-content:space-between"><h2 id="recent-title">Últimas tentativas</h2>
+          ${hist.length?`<button class="btn small" type="button" data-action="go-history">Ver histórico completo</button>`:""}</div>
+        ${hist.length?hist.slice(0,3).map(a=>attemptRow(a,false)).join(""):`<div class="empty" style="margin-top:14px"><p>Você ainda não concluiu nenhuma simulação. Suas tentativas aparecerão aqui, com pontuação e desfecho.</p></div>`}
+      </section>
+    </div>
+    <div class="stack">
+      <section class="card" aria-labelledby="how-title">
+        <h2 id="how-title">Como funciona</h2>
+        <ol class="steps-how">
+          <li><span class="n" aria-hidden="true">1</span><div><b>Leia o briefing</b><p class="muted">Entenda o contexto, o cliente e o que será observado.</p></div></li>
+          <li><span class="n" aria-hidden="true">2</span><div><b>Converse com Rafael</b><p class="muted">Em seis momentos, escolha entre três respostas plausíveis. Cada uma tem vantagens e riscos.</p></div></li>
+          <li><span class="n" aria-hidden="true">3</span><div><b>Observe as consequências</b><p class="muted">Depois de cada decisão, veja o feedback e como a conversa e o estado emocional do cliente mudam.</p></div></li>
+          <li><span class="n" aria-hidden="true">4</span><div><b>Analise o relatório</b><p class="muted">Veja o desempenho por competência, o caminho percorrido e recomendações práticas.</p></div></li>
+        </ol>
+      </section>
+      <div class="notice info">${icon("info")}<span>Não há cronômetro nem ranking. O foco é a qualidade das decisões e o que você aprende com as consequências.</span></div>
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+   G. RENDERIZAÇÃO: BRIEFING
+   ===================================================================== */
+function renderBriefing(){
+  $("#screen-briefing").innerHTML=`
+  <div class="page-head"><h1 tabindex="-1">Cliente em situação de conflito</h1><p>Briefing da simulação. Leia com atenção antes de começar o atendimento.</p></div>
+  <div class="grid-2">
+    <div class="stack">
+      <article class="card">
+        <h2>Contexto</h2>
+        <p style="margin-top:10px;max-width:68ch">Você trabalha como especialista de atendimento da <b>Nexora</b>, empresa fictícia de serviços digitais. Um cliente entrou em contato porque a solicitação de suporte dele está atrasada e ele recebeu informações contraditórias. Ele está frustrado e ameaça cancelar o contrato.</p>
+        <h3 style="margin:22px 0 6px">Sua missão</h3>
+        <p style="max-width:68ch">Conduzir o atendimento de maneira profissional, demonstrando empatia, comunicação clara e capacidade de resolução de problemas.</p>
+        <h3 style="margin:22px 0 6px">Orientações para a participação</h3>
+        <ul class="briefing-list">
+          <li>Leia a mensagem do cliente e escolha a resposta que você daria na vida real, não a que parece mais correta.</li>
+          <li>As três alternativas são plausíveis, cada uma com vantagens e riscos.</li>
+          <li>Você pode pausar a qualquer momento. O progresso fica salvo neste navegador.</li>
+          <li>Após cada decisão, você recebe um feedback e vê a reação do cliente.</li>
+        </ul>
+        <div class="callout" style="margin-top:20px"><b>Atenção:</b> suas decisões têm consequências. As respostas do cliente, as situações seguintes e o desfecho dependem do caminho que você escolher.</div>
+        <div class="row" style="margin-top:24px">
+          <button class="btn primary" type="button" data-action="begin">${icon("play")}Começar atendimento</button>
+          <button class="btn" type="button" data-action="go-dashboard">Voltar ao início</button>
+        </div>
+      </article>
+    </div>
+    <div class="stack">
+      <section class="card" aria-label="Perfil do cliente">
+        <div class="client-card"><div class="avatar" aria-hidden="true">RM</div>
+          <div><h2>Rafael Martins</h2><span class="chip warn" style="margin-top:6px">Cliente insatisfeito</span></div></div>
+        <p class="muted" style="margin-top:14px">Plano Business, cliente desde 2022. Chamado 48213 aberto há nove dias por cobrança duplicada.</p>
+      </section>
+      <section class="card" aria-labelledby="avl-title">
+        <h2 id="avl-title" style="margin-bottom:14px">Competências avaliadas</h2>${compList()}
+      </section>
+      <div class="notice info">${icon("info")}<span>As pontuações são indicadores desta simulação, não uma medição psicológica nem uma avaliação profissional validada.</span></div>
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+   H. RENDERIZAÇÃO: SIMULADOR
+   ===================================================================== */
+function emotionMeter(key){
+  const e=EMOTIONS[key]||EMOTIONS.reservado;
+  return `<div class="mood" aria-label="Estado emocional do cliente: ${e.label}, abertura ${e.level} de 5">
+    <span>Estado emocional: <b>${e.label}</b></span>
+    <span class="meter" aria-hidden="true">${[1,2,3,4,5].map(i=>`<i class="${i<=e.level?"on":""}"></i>`).join("")}</span></div>`;
+}
+function bubbleHTML(b){
+  if(b.who==="client") return `<div class="msg client ${b.isNew?"new":""}"><div class="avatar sm" aria-hidden="true">RM</div><div class="bubble"><div class="who">Rafael Martins</div><p>${esc(b.text)}</p></div></div>`;
+  return `<div class="msg me"><div class="avatar sm me" aria-hidden="true">VC</div><div class="bubble"><div class="who">Você</div><p>${esc(b.text)}</p></div></div>`;
+}
+function choiceHTML(st){
+  const scene=SCENES[st.sceneId], n=st.trail.length+1;
+  return `<form id="choice-form" novalidate>
+    <fieldset>
+      <legend id="decision-legend" tabindex="-1"><small>Decisão ${n} de ${CONFIG.totalDecisions}: ${MOMENTS[scene.moment]}</small>Como você responde?</legend>
+      <p class="prompt">${esc(scene.prompt)}</p>
+      <div class="options">${scene.options.map(o=>`
+        <label class="option"><input type="radio" name="opt" value="${o.id}" ${app.selected===o.id?"checked":""}>
+          <span class="option-body"><span class="radio-dot" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></span><span>${esc(o.text)}</span></span></label>`).join("")}
+      </div>
+      <div class="actions"><button type="submit" class="btn primary" id="btn-confirm" ${app.selected?"":"disabled"}>${icon("check")}Confirmar escolha</button>
+        <span class="muted" style="font-size:.9rem">Selecione uma alternativa e confirme.</span></div>
+    </fieldset></form>`;
+}
+function feedbackHTML(st){
+  const t=st.trail[st.trail.length-1], fb=t.option.fb;
+  const focus=COMP_KEYS.filter(c=>t.option.scores[c]>=2);
+  const main=focus.length?focus:[COMP_KEYS.reduce((a,c)=>t.option.scores[c]>t.option.scores[a]?c:a,"emp")];
+  let mood="";
+  if(!st.finished){
+    const before=EMOTIONS[t.variant.emotion], nv=pickVariant(SCENES[st.sceneId],st), after=EMOTIONS[nv.emotion];
+    const dir=after.level>before.level?"up":after.level<before.level?"down":"same";
+    const txt={up:"Rafael ficou mais aberto",down:"Rafael ficou mais resistente",same:"Rafael manteve o nível de abertura"}[dir];
+    mood=`<div class="fb-block wide"><h4>Efeito na conversa</h4><div class="mood-shift">${icon(dir)}<span>${txt}: <b>${before.label}</b> para <b>${after.label}</b>.</span></div></div>`;
+  }
+  const last=st.finished;
+  return `<div class="fb" aria-live="polite">
+    <div class="fb-head"><h2 id="fb-title" tabindex="-1">Feedback da decisão ${t.n}</h2>
+      <div class="row"><span class="muted" style="font-size:.9rem">Competência em foco:</span>${main.map(c=>`<span class="chip">${icon(COMPETENCIES[c].icon)}${COMPETENCIES[c].name}</span>`).join("")}</div></div>
+    <div class="fb-grid">
+      <div class="fb-block"><h4>O que sua resposta comunicou</h4><p>${esc(fb.comunica)}</p></div>
+      <div class="fb-block"><h4>Comportamento profissional demonstrado</h4><p>${esc(fb.comportamento)}</p></div>
+      <div class="fb-block"><h4>Consequência na conversa</h4><p>${esc(pickText(fb.consequencia,t.scene))}</p></div>
+      <div class="fb-block"><h4>Recomendação</h4><p>${esc(fb.recomendacao)}</p></div>
+      ${mood}
+    </div>
+    <div class="actions" style="margin-top:2px"><button class="btn primary" type="button" id="btn-continue" data-action="continue">${last?"Ver relatório final":"Continuar atendimento"}${icon("arrow")}</button></div>
+  </div>`;
+}
+function renderSim(opts={}){
+  const cur=app.store.current;
+  if(!cur){ go("dashboard"); return; }
+  let st; try{ st=computeState(cur.decisions); }catch(e){ app.store.current=null; saveStore(); toast("Não foi possível retomar a simulação salva. Ela foi reiniciada."); go("dashboard"); return; }
+  const wantTyping=!!opts.typing && !cur.awaitingContinue && !st.finished && !reducedMotion();
+  const bubbles=[]; st.trail.forEach(t=>{ bubbles.push({who:"client",text:t.variant.text,emotion:t.variant.emotion}); bubbles.push({who:"me",text:t.option.text}); });
+  let currentClient=null;
+  if(!cur.awaitingContinue && !st.finished){ currentClient=pickVariant(SCENES[st.sceneId],st); if(!wantTyping) bubbles.push({who:"client",text:currentClient.text,emotion:currentClient.emotion,isNew:!!opts.focus}); }
+  const lastClient=[...bubbles].reverse().find(b=>b.who==="client");
+  const emotion=lastClient?lastClient.emotion:(currentClient?currentClient.emotion:"irritado");
+  const done=st.trail.length, pct=Math.round(done/CONFIG.totalDecisions*100);
+  const wide=window.matchMedia("(min-width:1001px)").matches;
+  let area;
+  if(cur.awaitingContinue) area=feedbackHTML(st);
+  else if(wantTyping) area=`<p class="muted" id="typing-note">Rafael está digitando uma resposta…</p>`;
+  else area=choiceHTML(st);
+
+  $("#screen-sim").innerHTML=`
+  <h1 class="sr-only" tabindex="-1">Simulação de atendimento: Cliente em situação de conflito</h1>
+  <div class="sim">
+    <aside class="sim-side card" aria-label="Informações do cenário">
+      <div class="client-card"><div class="avatar" aria-hidden="true">RM</div><div><b>Rafael Martins</b><br><span class="chip warn" style="margin-top:4px">Cliente insatisfeito</span></div></div>
+      <div><div class="row" style="justify-content:space-between;margin-bottom:6px"><b style="font-size:.95rem">Progresso</b><span class="muted" style="font-size:.9rem">${done} de ${CONFIG.totalDecisions} decisões</span></div>
+        <div class="progress" role="progressbar" aria-label="Progresso da simulação" aria-valuemin="0" aria-valuemax="${CONFIG.totalDecisions}" aria-valuenow="${done}"><span style="width:${pct}%"></span></div></div>
+      <details class="acc" ${wide?"open":""}><summary>Contexto do caso</summary><div class="acc-body"><p>Nexora, empresa de serviços digitais. Chamado 48213 aberto há nove dias por cobrança duplicada no plano Business. Rafael recebeu prazos diferentes e ameaça cancelar o contrato.</p></div></details>
+      <details class="acc" ${wide?"open":""}><summary>Competências observadas</summary><div class="acc-body">${compList()}<p>Os resultados por competência aparecem no relatório final.</p></div></details>
+      <div class="row"><button class="btn small danger" type="button" data-action="restart">${icon("refresh")}Reiniciar</button>
+        <button class="btn small" type="button" data-action="go-dashboard">Sair e continuar depois</button></div>
+    </aside>
+    <div class="sim-main">
+      <section class="card" aria-label="Conversa com o cliente">
+        <div class="chat-head"><div class="who"><div class="avatar" aria-hidden="true">RM</div><div><b>Rafael Martins</b><br><span class="muted" style="font-size:.88rem">Atendimento Nexora, chamado 48213</span></div></div>${emotionMeter(emotion)}</div>
+        <div class="chat-log" id="chat-log" tabindex="0" role="region" aria-label="Histórico da conversa">
+          ${bubbles.map(bubbleHTML).join("")}
+          ${wantTyping?`<div class="msg client"><div class="avatar sm" aria-hidden="true">RM</div><div class="bubble"><div class="who">Rafael Martins</div><span class="typing" aria-hidden="true"><i></i><i></i><i></i></span></div></div>`:""}
+        </div>
+      </section>
+      <section class="card decision" id="decision-area" aria-label="Decisão atual">${area}</section>
+    </div>
+  </div>`;
+  const log=$("#chat-log"); log.scrollTop=log.scrollHeight;
+  if(wantTyping){
+    app.typingTimer=setTimeout(()=>{ renderSim({focus:"decision",announceClient:true}); },1000);
+    return;
+  }
+  if(opts.announceClient && currentClient) announce("Rafael: "+currentClient.text);
+  if(opts.focus==="feedback") focusEl($("#fb-title"));
+  else if(opts.focus==="decision") { const l=$("#decision-legend"); if(l) l.focus({preventScroll:true}); window.scrollTo({top:$("#decision-area").offsetTop-120,behavior:reducedMotion()?"auto":"smooth"}); }
+}
+function startTyping(){ renderSim({typing:true}); }
+
+/* Ações do simulador */
+async function confirmChoice(){
+  if(app.locked||!app.selected) return;
+  const cur=app.store.current; let st; try{ st=computeState(cur.decisions); }catch(e){ return; }
+  if(!SCENES[st.sceneId].options.some(o=>o.id===app.selected)) return;
+  app.locked=true;
+  cur.decisions.push({scene:st.sceneId,option:app.selected}); cur.awaitingContinue=true; saveStore();
+  app.selected=null; renderSim({focus:"feedback"}); app.locked=false;
+}
+function continueSim(){
+  if(app.locked) return; app.locked=true;
+  const cur=app.store.current; const st=computeState(cur.decisions);
+  cur.awaitingContinue=false;
+  if(st.finished){ finishAttempt(); app.locked=false; return; }
+  saveStore(); startTyping(); app.locked=false;
+}
+function finishAttempt(){
+  const cur=app.store.current, r=computeResult(cur.decisions);
+  const attempt={id:"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:new Date().toISOString(),decisions:cur.decisions.slice(),summary:{overall:r.overall,outcome:r.outcome.key,pct:r.pct,trust:r.trust}};
+  app.store.history.unshift(attempt); app.store.current=null; saveStore();
+  app.reportId=attempt.id; app.reportFresh=true; go("report");
+}
+async function restartSim(){
+  const ok=await confirmDialog({title:"Reiniciar a simulação?",text:"O progresso desta simulação será descartado e o atendimento recomeça do início.",confirmLabel:"Reiniciar",danger:true});
+  if(!ok) return;
+  app.store.current=newCurrent(); saveStore(); app.selected=null; startTyping(); announce("Simulação reiniciada.");
+}
+
+/* =====================================================================
+   I. RENDERIZAÇÃO: RELATÓRIO
+   ===================================================================== */
+function pathMapSVG(trail){
+  const xs=i=>56+i*96, ys=i=>34+i*44;
+  const pts=trail.map((t,i)=>[xs(i),ys(t.index)]);
+  const line=pts.map(p=>p.join(",")).join(" ");
+  const nodes=trail.map((t,i)=>{
+    const d=t.trustAfter-t.trustBefore, fill=d>0?"#15966A":d<0?"#D96767":"#E4A64B", sym=d>0?"+":d<0?"−":"=", col=d===0?"#15253E":"#fff";
+    return `<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="14" fill="${fill}" stroke="#fff" stroke-width="3"/><text x="${pts[i][0]}" y="${pts[i][1]+5}" text-anchor="middle" font-size="15" font-weight="700" fill="${col}">${sym}</text><text x="${pts[i][0]}" y="146" text-anchor="middle" font-size="12" fill="#4F5E75">D${t.n}</text>`;
+  }).join("");
+  const guides=[0,1,2].map(i=>`<line x1="24" x2="600" y1="${ys(i)}" y2="${ys(i)}" stroke="#E4EAF3" stroke-dasharray="3 5"/><text x="8" y="${ys(i)+4}" font-size="11" fill="#4F5E75">${"ABC"[i]}</text>`).join("");
+  return `<svg class="pathmap" viewBox="0 0 620 156" role="img" aria-label="Mapa do caminho percorrido: ${trail.map(t=>"decisão "+t.n+" alternativa "+"ABC"[t.index]).join(", ")}">${guides}<polyline points="${line}" fill="none" stroke="#176B83" stroke-width="2.5" stroke-linejoin="round"/>${nodes}</svg>`;
+}
+function renderReport(){
+  const host=$("#screen-report");
+  const a=app.store.history.find(x=>x.id===app.reportId);
+  let r=null; if(a){ try{ r=computeResult(a.decisions); }catch(e){ r=null; } }
+  if(!a||!r){ host.innerHTML=`<div class="page-head"><h1 tabindex="-1">Relatório indisponível</h1><p>Não encontramos os dados desta tentativa.</p></div><button class="btn primary" type="button" data-action="go-history">Ir para o histórico</button>`; return; }
+  const trail=r.st.trail, o=r.outcome;
+  const ringColor=o.key==="positive"?"var(--green)":o.key==="critical"?"var(--red)":"var(--amber)";
+  const strengths=trail.filter(t=>Math.max(...COMP_KEYS.map(c=>t.option.scores[c]))>=3||t.option.trust>=2).slice(0,4).map(t=>`Decisão ${t.n}: ${t.option.shows}.`);
+  const gaps=trail.filter(t=>COMP_KEYS.reduce((s,c)=>s+t.option.scores[c],0)<=4||t.option.trust<0).slice(0,4).map(t=>`Decisão ${t.n}: ${t.option.risk}.`);
+  const lowest=COMP_KEYS.reduce((x,c)=>r.pct[c]<r.pct[x]?c:x,"emp");
+  if(!gaps.length) gaps.push(`A competência com menor indicador foi ${COMPETENCIES[lowest].name.toLowerCase()} (${r.pct[lowest]}%). Experimente caminhos alternativos para comparar consequências.`);
+  if(!strengths.length) strengths.push("Nenhuma decisão se destacou de forma consistente nesta tentativa. Use as recomendações abaixo como ponto de partida.");
+  const delta=t=>t.trustAfter-t.trustBefore;
+  const trustTxt=t=>delta(t)>0?{c:"ok",i:"up",l:"Aumentou a confiança do cliente"}:delta(t)<0?{c:"risk",i:"down",l:"Reduziu a confiança do cliente"}:{c:"warn",i:"same",l:"Manteve a confiança do cliente"};
+  host.innerHTML=`
+  <div class="page-head"><h1 tabindex="-1">${app.reportFresh?"Simulação concluída":"Relatório da tentativa"}</h1>
+    <p>${app.reportFresh?"Você concluiu o atendimento de Rafael Martins. Veja abaixo como as suas decisões moldaram a conversa.":"Tentativa realizada em "+esc(fmtDate(a.date))+"."}</p></div>
+  <div class="stack">
+    <section class="card" aria-labelledby="res-title">
+      <div class="report-hero">
+        <div class="score-ring" style="--p:${r.overall};--ring:${ringColor}" role="img" aria-label="Pontuação geral: ${r.overall} de 100"><div><span><b>${r.overall}</b><small>de 100</small></span></div></div>
+        <div><span class="chip ${o.chip}">${o.chip==="ok"?icon("check"):icon("alert")}${esc(o.label)}</span>
+          <h2 id="res-title" style="margin:12px 0 8px">Resultado geral da simulação</h2>
+          <p style="max-width:68ch">${esc(o.narrative)}</p>
+          <p class="quote">Rafael: “${esc(o.client)}”</p></div>
+      </div>
+      ${r.notes.length?`<h3 style="margin:22px 0 4px">O que no seu histórico de decisões pesou no desfecho</h3><ul class="list">${r.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}
+      <div class="notice info" style="margin-top:20px">${icon("info")}<span>A pontuação é um indicador desta simulação e depende do cenário e das alternativas oferecidas. Ela não mede a competência profissional de forma definitiva nem é uma avaliação psicológica validada.</span></div>
+    </section>
+
+    <section class="card" aria-labelledby="comp-title">
+      <h2 id="comp-title" style="margin-bottom:18px">Desempenho por competência</h2>
+      <div class="comp-report">${COMP_KEYS.map(c=>{ const b=bandOf(r.pct[c]); return `<div class="comp-row">
+        <div class="top"><b>${COMPETENCIES[c].name}</b><span><b>${r.pct[c]}%</b> <span class="chip ${b.cls}">${b.label}</span></span></div>
+        <div class="bar ${b.cls}" role="img" aria-label="${COMPETENCIES[c].name}: ${r.pct[c]} por cento"><span style="width:${r.pct[c]}%"></span></div>
+        <p class="muted" style="font-size:.93rem"><b>Decisões que influenciaram:</b> ${trail.map(t=>`D${t.n} (${t.option.scores[c]}/3)`).join(", ")}.</p>
+        <p style="font-size:.95rem">${esc(COMPETENCIES[c].recs[b.key])}</p></div>`; }).join("")}</div>
+    </section>
+
+    <div class="cols-2">
+      <section class="card" aria-labelledby="str-title"><h2 id="str-title">Pontos fortes demonstrados</h2><ul class="list">${strengths.map(s=>`<li>${esc(s)}</li>`).join("")}</ul></section>
+      <section class="card" aria-labelledby="gap-title"><h2 id="gap-title">Oportunidades de desenvolvimento</h2><ul class="list">${gaps.map(s=>`<li>${esc(s)}</li>`).join("")}</ul></section>
+    </div>
+
+    <section class="card" aria-labelledby="path-title">
+      <h2 id="path-title">Caminho percorrido</h2>
+      <p class="muted" style="margin:8px 0 14px;max-width:70ch">Cada ponto mostra qual das três alternativas (A, B ou C, de cima para baixo) você escolheu em cada decisão, e o símbolo indica o efeito sobre a confiança do cliente: + aumentou, = manteve, − reduziu.</p>
+      ${pathMapSVG(trail)}
+    </section>
+
+    <section class="card" aria-labelledby="chrono-title">
+      <h2 id="chrono-title" style="margin-bottom:6px">Resumo cronológico das decisões</h2>
+      ${trail.map(t=>{ const tt=trustTxt(t); return `<article class="step" aria-label="Decisão ${t.n}">
+        <div class="step-head"><h3>Decisão ${t.n}: ${MOMENTS[t.scene.moment]}</h3><span class="chip ${tt.c}">${icon(tt.i)}${tt.l}</span></div>
+        <p class="muted" style="font-size:.92rem">Rafael disse: “${esc(t.variant.text)}”</p>
+        <div class="said"><b>${esc(t.option.label)}.</b> ${esc(t.option.text)}</div>
+        <div class="effects">${COMP_KEYS.map(c=>`<span class="chip plain">${COMPETENCIES[c].name}: ${t.option.scores[c]}/3</span>`).join("")}</div>
+        <p><b>Como influenciou o resultado:</b> ${esc(pickText(t.option.fb.consequencia,t.scene))}</p>
+      </article>`; }).join("")}
+    </section>
+
+    <details class="acc"><summary>Como a pontuação é calculada</summary><div class="acc-body">
+      <p>Cada alternativa recebe de 0 a 3 pontos em cada competência: 0 = não demonstrada, 1 = demonstrada parcialmente, 2 = demonstrada de forma consistente, 3 = demonstrada de forma intensa e adequada ao contexto. Cada alternativa também altera a confiança do cliente, o que influencia o desfecho.</p>
+      <p>Os pontos de cada competência são somados nas seis decisões e normalizados de 0 a 100 em relação ao máximo possível naquela competência no cenário. Atingir 100% nas três ao mesmo tempo não é possível, porque as alternativas envolvem trocas entre empatia, comunicação e resolução. A pontuação geral é a média das três.</p>
+      <p>O desfecho depende do histórico completo: confiança acumulada, pontuação geral e decisões-chave, como informar de forma vaga ou transferir o caso, e não apenas da última resposta.</p>
+    </div></details>
+
+    <div class="report-actions">
+      <button class="btn primary" type="button" data-action="retry">${icon("refresh")}Tentar novamente</button>
+      <button class="btn" type="button" data-action="go-dashboard">${icon("home")}Voltar ao dashboard</button>
+      <button class="btn" type="button" data-action="print">${icon("print")}Imprimir relatório</button>
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+   J. RENDERIZAÇÃO: HISTÓRICO
+   ===================================================================== */
+function renderHistory(){
+  const hist=app.store.history;
+  $("#screen-history").innerHTML=`
+  <div class="page-head"><h1 tabindex="-1">Histórico de tentativas</h1><p>Consulte o resultado de cada simulação concluída e reveja os relatórios. Os dados ficam salvos apenas neste navegador.</p></div>
+  <section class="card" aria-label="Lista de tentativas">
+    ${hist.length?`<div class="row" style="justify-content:space-between;margin-bottom:6px"><span class="muted">${hist.length} ${hist.length===1?"tentativa registrada":"tentativas registradas"}</span>
+      <button class="btn small danger" type="button" data-action="delete-all">${icon("trash")}Excluir todo o histórico</button></div>${hist.map(a=>attemptRow(a,true)).join("")}`
+    :`<div class="empty"><p>Nenhuma tentativa concluída ainda. Quando você finalizar uma simulação, ela aparecerá aqui.</p><button class="btn primary" type="button" data-action="start">${icon("play")}Iniciar simulação</button></div>`}
+  </section>`;
+}
+
+/* =====================================================================
+   K. EVENTOS E INICIALIZAÇÃO
+   ===================================================================== */
+document.addEventListener("click",async e=>{
+  const btn=e.target.closest("[data-action]"); if(!btn) return;
+  const act=btn.dataset.action;
+  switch(act){
+    case "go-dashboard": go("dashboard"); break;
+    case "go-history": go("history"); break;
+    case "start": go("briefing"); break;
+    case "begin":{
+      if(app.store.current && app.store.current.decisions.length){
+        const ok=await confirmDialog({title:"Substituir a simulação em andamento?",text:"Existe uma simulação não concluída. Começar um novo atendimento descarta esse progresso.",confirmLabel:"Começar do zero",danger:true});
+        if(!ok) break;
+      }
+      app.store.current=newCurrent(); saveStore(); go("sim",{focus:false,sim:{typing:true}}); window.scrollTo(0,0); announce("Atendimento iniciado.");
+      break;}
+    case "resume": go("sim",{sim:{focus:"decision",announceClient:false}}); break;
+    case "continue": continueSim(); break;
+    case "restart": restartSim(); break;
+    case "view-report": app.reportId=btn.dataset.id; app.reportFresh=false; go("report"); break;
+    case "retry": go("briefing"); break;
+    case "print": window.print(); break;
+    case "delete-one":{
+      const ok=await confirmDialog({title:"Excluir esta tentativa?",text:"O registro será removido deste navegador e não poderá ser recuperado.",confirmLabel:"Excluir",danger:true});
+      if(ok){ app.store.history=app.store.history.filter(a=>a.id!==btn.dataset.id); saveStore(); renderHistory(); toast("Tentativa excluída."); announce("Tentativa excluída."); focusEl($("#screen-history h1")); }
+      break;}
+    case "delete-all":{
+      const ok=await confirmDialog({title:"Excluir todo o histórico?",text:"Todas as tentativas concluídas serão removidas deste navegador. Uma simulação em andamento não é afetada.",confirmLabel:"Excluir tudo",danger:true});
+      if(ok){ app.store.history=[]; saveStore(); renderHistory(); toast("Histórico excluído."); announce("Histórico excluído."); focusEl($("#screen-history h1")); }
+      break;}
+  }
+});
+document.addEventListener("change",e=>{
+  if(e.target.name==="opt"){ app.selected=e.target.value; const b=$("#btn-confirm"); if(b) b.disabled=false; }
+});
+document.addEventListener("submit",e=>{
+  if(e.target.id==="choice-form"){ e.preventDefault(); confirmChoice(); }
+});
+
+function init(){
+  const errs=validateScenario();
+  if(errs.length){ console.error("DecisionLab: problemas no cenário:",errs); toast("Foi detectado um problema na configuração do cenário. Consulte o console do navegador."); }
+  app.store=loadStore();
+  go("dashboard",{focus:false});
+  if(app.notice) announce(app.notice);
+}
+init();
+</script>
+</body>
+</html>
